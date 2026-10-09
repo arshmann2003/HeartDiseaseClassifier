@@ -1,0 +1,15 @@
+-r requirements.txt
+
+# Training pipeline
+matplotlib==3.11.2
+scipy==1.18.1
+kagglehub
+
+# Notebooks
+jupyter
+seaborn==0.13.2
+imbalanced-learn
+
+# Tests and linting
+pytest==9.1.1
+ruff
