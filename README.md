@@ -7,7 +7,7 @@ A machine learning screening tool that estimates the chance that a person has he
 21 lifestyle and health survey answers. It is trained on **253,680 responses** to the CDC's 2015
 Behavioral Risk Factor Surveillance System (BRFSS).
 
-**[Try the live demo →](https://heart-risk-screener.streamlit.app)**
+**Live demo: [heart-risk-screener.streamlit.app](https://heart-risk-screener.streamlit.app)**
 
 ![Web app screenshot](docs/images/app_screenshot.png)
 
