@@ -1,0 +1,385 @@
+{
+  "model_name": "Gradient Boosting",
+  "sklearn_version": "1.9.1",
+  "trained_at": "2026-10-09",
+  "n_rows": 253680,
+  "split_sizes": {
+    "train": 152208,
+    "validation": 50736,
+    "test": 50736
+  },
+  "prevalence": 0.09418558814254178,
+  "target_recall": 0.8,
+  "threshold": 0.09942202142023777,
+  "best_params": {
+    "l2_regularization": 0.059750279999602945,
+    "learning_rate": 0.09195011569464331,
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 153
+  },
+  "feature_columns": [
+    "HighBP",
+    "HighChol",
+    "CholCheck",
+    "BMI",
+    "Smoker",
+    "Stroke",
+    "Diabetes",
+    "PhysActivity",
+    "Fruits",
+    "Veggies",
+    "HvyAlcoholConsump",
+    "AnyHealthcare",
+    "NoDocbcCost",
+    "GenHlth",
+    "MentHlth",
+    "PhysHlth",
+    "DiffWalk",
+    "Sex",
+    "Age",
+    "Education",
+    "Income"
+  ],
+  "reference_profile": {
+    "HighBP": 0.0,
+    "HighChol": 0.0,
+    "CholCheck": 1.0,
+    "BMI": 27.0,
+    "Smoker": 0.0,
+    "Stroke": 0.0,
+    "Diabetes": 0.0,
+    "PhysActivity": 1.0,
+    "Fruits": 1.0,
+    "Veggies": 1.0,
+    "HvyAlcoholConsump": 0.0,
+    "AnyHealthcare": 1.0,
+    "NoDocbcCost": 0.0,
+    "GenHlth": 2.0,
+    "MentHlth": 0.0,
+    "PhysHlth": 0.0,
+    "DiffWalk": 0.0,
+    "Sex": 0.0,
+    "Age": 8.0,
+    "Education": 5.0,
+    "Income": 7.0
+  },
+  "prevalence_by_group": [
+    {
+      "Sex": 0,
+      "Age": 1,
+      "target": 0.0042
+    },
+    {
+      "Sex": 0,
+      "Age": 2,
+      "target": 0.0063
+    },
+    {
+      "Sex": 0,
+      "Age": 3,
+      "target": 0.0122
+    },
+    {
+      "Sex": 0,
+      "Age": 4,
+      "target": 0.0109
+    },
+    {
+      "Sex": 0,
+      "Age": 5,
+      "target": 0.0162
+    },
+    {
+      "Sex": 0,
+      "Age": 6,
+      "target": 0.0305
+    },
+    {
+      "Sex": 0,
+      "Age": 7,
+      "target": 0.042
+    },
+    {
+      "Sex": 0,
+      "Age": 8,
+      "target": 0.0567
+    },
+    {
+      "Sex": 0,
+      "Age": 9,
+      "target": 0.0734
+    },
+    {
+      "Sex": 0,
+      "Age": 10,
+      "target": 0.0877
+    },
+    {
+      "Sex": 0,
+      "Age": 11,
+      "target": 0.1217
+    },
+    {
+      "Sex": 0,
+      "Age": 12,
+      "target": 0.1445
+    },
+    {
+      "Sex": 0,
+      "Age": 13,
+      "target": 0.1939
+    },
+    {
+      "Sex": 1,
+      "Age": 1,
+      "target": 0.0045
+    },
+    {
+      "Sex": 1,
+      "Age": 2,
+      "target": 0.0079
+    },
+    {
+      "Sex": 1,
+      "Age": 3,
+      "target": 0.0094
+    },
+    {
+      "Sex": 1,
+      "Age": 4,
+      "target": 0.0164
+    },
+    {
+      "Sex": 1,
+      "Age": 5,
+      "target": 0.0297
+    },
+    {
+      "Sex": 1,
+      "Age": 6,
+      "target": 0.0405
+    },
+    {
+      "Sex": 1,
+      "Age": 7,
+      "target": 0.0662
+    },
+    {
+      "Sex": 1,
+      "Age": 8,
+      "target": 0.0965
+    },
+    {
+      "Sex": 1,
+      "Age": 9,
+      "target": 0.1342
+    },
+    {
+      "Sex": 1,
+      "Age": 10,
+      "target": 0.1865
+    },
+    {
+      "Sex": 1,
+      "Age": 11,
+      "target": 0.2337
+    },
+    {
+      "Sex": 1,
+      "Age": 12,
+      "target": 0.2615
+    },
+    {
+      "Sex": 1,
+      "Age": 13,
+      "target": 0.3025
+    }
+  ],
+  "feature_importance": [
+    {
+      "feature": "Age",
+      "importance": 0.08954,
+      "std": 0.00602
+    },
+    {
+      "feature": "GenHlth",
+      "importance": 0.07582,
+      "std": 0.00641
+    },
+    {
+      "feature": "Stroke",
+      "importance": 0.03967,
+      "std": 0.00384
+    },
+    {
+      "feature": "Sex",
+      "importance": 0.03906,
+      "std": 0.00411
+    },
+    {
+      "feature": "HighChol",
+      "importance": 0.02378,
+      "std": 0.00485
+    },
+    {
+      "feature": "HighBP",
+      "importance": 0.01792,
+      "std": 0.00378
+    },
+    {
+      "feature": "Smoker",
+      "importance": 0.00972,
+      "std": 0.00186
+    },
+    {
+      "feature": "DiffWalk",
+      "importance": 0.00773,
+      "std": 0.00076
+    },
+    {
+      "feature": "Diabetes",
+      "importance": 0.00643,
+      "std": 0.00173
+    },
+    {
+      "feature": "PhysHlth",
+      "importance": 0.00277,
+      "std": 0.00105
+    },
+    {
+      "feature": "Income",
+      "importance": 0.0027,
+      "std": 0.00105
+    },
+    {
+      "feature": "HvyAlcoholConsump",
+      "importance": 0.00088,
+      "std": 0.00068
+    },
+    {
+      "feature": "Education",
+      "importance": 0.0008,
+      "std": 0.00019
+    },
+    {
+      "feature": "NoDocbcCost",
+      "importance": 0.00069,
+      "std": 0.00041
+    },
+    {
+      "feature": "CholCheck",
+      "importance": 0.00069,
+      "std": 0.0009
+    },
+    {
+      "feature": "Veggies",
+      "importance": 0.00022,
+      "std": 0.00016
+    },
+    {
+      "feature": "Fruits",
+      "importance": 0.00017,
+      "std": 0.00011
+    },
+    {
+      "feature": "AnyHealthcare",
+      "importance": 5e-05,
+      "std": 0.00013
+    },
+    {
+      "feature": "MentHlth",
+      "importance": -5e-05,
+      "std": 0.00034
+    },
+    {
+      "feature": "PhysActivity",
+      "importance": -0.00028,
+      "std": 0.00016
+    },
+    {
+      "feature": "BMI",
+      "importance": -0.00065,
+      "std": 0.00045
+    }
+  ],
+  "results": {
+    "Logistic Regression": {
+      "validation": {
+        "roc_auc": 0.846457558835157,
+        "pr_auc": 0.3718215283504366,
+        "brier": 0.07045631605100713
+      },
+      "test": {
+        "roc_auc": 0.8479006534093015,
+        "pr_auc": 0.3705181037099701,
+        "brier": 0.07028276842516427
+      },
+      "test_at_threshold": {
+        "threshold": 0.09131195790562716,
+        "recall": 0.8118459606529929,
+        "precision": 0.24027502477700693,
+        "specificity": 0.7331258975586405,
+        "f1": 0.37080585030111846,
+        "flagged_rate": 0.31819615263323875,
+        "confusion_matrix": {
+          "tn": 33693,
+          "fp": 12265,
+          "fn": 899,
+          "tp": 3879
+        }
+      }
+    },
+    "Random Forest": {
+      "validation": {
+        "roc_auc": 0.8486552153023599,
+        "pr_auc": 0.37172905028760905,
+        "brier": 0.07026143291133619
+      },
+      "test": {
+        "roc_auc": 0.8497814974055606,
+        "pr_auc": 0.3765846086795109,
+        "brier": 0.07007976070619616
+      },
+      "test_at_threshold": {
+        "threshold": 0.11179818292659723,
+        "recall": 0.8078694014231896,
+        "precision": 0.2428283844992451,
+        "specificity": 0.7381087079507376,
+        "f1": 0.3734158846860791,
+        "flagged_rate": 0.3133081046988332,
+        "confusion_matrix": {
+          "tn": 33922,
+          "fp": 12036,
+          "fn": 918,
+          "tp": 3860
+        }
+      }
+    },
+    "Gradient Boosting": {
+      "validation": {
+        "roc_auc": 0.8495257694307556,
+        "pr_auc": 0.3750240816399685,
+        "brier": 0.06996597905560263
+      },
+      "test": {
+        "roc_auc": 0.8506864061971082,
+        "pr_auc": 0.3786863292301271,
+        "brier": 0.0696755273591545
+      },
+      "test_at_threshold": {
+        "threshold": 0.09942202142023777,
+        "recall": 0.8095437421515278,
+        "precision": 0.24366889252866322,
+        "specificity": 0.7387614778710997,
+        "f1": 0.37458841758667444,
+        "flagged_rate": 0.3128744875433617,
+        "confusion_matrix": {
+          "tn": 33952,
+          "fp": 12006,
+          "fn": 910,
+          "tp": 3868
+        }
+      }
+    }
+  }
+}
