@@ -15,5 +15,5 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt pytest ruff
-      - run: ruff check heart_risk app.py train.py tests
+      - run: ruff check heart_risk app.py train.py tests scripts
       - run: pytest -v

@@ -12,6 +12,9 @@ venv/
 # Data (download with `python train.py` or from Kaggle)
 data/
 
+# Keep-alive failure screenshot
+keep_alive_failure.png
+
 # OS / editor
 .DS_Store
 .idea/
