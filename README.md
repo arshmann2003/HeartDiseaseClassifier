@@ -96,7 +96,10 @@ visitor used. Events are sent from a background thread so the app never waits on
 table's row-level security lets the app's public key insert known event types only, with no read
 access, and health answers are never sent. See [`supabase/schema.sql`](supabase/schema.sql), the
 `visits` and `daily_visits` views in [`supabase/views.sql`](supabase/views.sql), and the reports in
-[`supabase/queries.sql`](supabase/queries.sql).
+[`supabase/queries.sql`](supabase/queries.sql). A private dashboard (`streamlit run dashboard.py`)
+charts visits by day and source, engagement, and keep-alive health. It connects through a separate
+read-only database login ([`supabase/reader_role.sql`](supabase/reader_role.sql)), so the app's key
+stays insert-only.
 
 ## Run it locally
 
@@ -119,6 +122,7 @@ yourself.
 
 ```
 ├── app.py                  # Streamlit web app
+├── dashboard.py            # Private usage analytics dashboard (run locally)
 ├── train.py                # Reproducible training and evaluation pipeline
 ├── heart_risk/             # Feature schema, modeling and explanation code
 ├── models/                 # Trained model and metadata (metrics, threshold, reference values)

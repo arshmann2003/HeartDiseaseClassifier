@@ -5,6 +5,9 @@ matplotlib==3.11.2
 scipy==1.18.1
 kagglehub
 
+# Local analytics dashboard
+psycopg[binary]==3.3.6
+
 # Notebooks
 jupyter
 seaborn==0.13.2
