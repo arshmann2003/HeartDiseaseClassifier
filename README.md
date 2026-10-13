@@ -94,8 +94,9 @@ answer and measuring how much the predicted risk changes.
 answers were edited) to a Supabase Postgres table, tagged with the `?ref=` value of the link the
 visitor used. Events are sent from a background thread so the app never waits on the network. The
 table's row-level security lets the app's public key insert known event types only, with no read
-access, and health answers are never sent. See [`supabase/schema.sql`](supabase/schema.sql) and the
-reports in [`supabase/queries.sql`](supabase/queries.sql).
+access, and health answers are never sent. See [`supabase/schema.sql`](supabase/schema.sql), the
+`visits` and `daily_visits` views in [`supabase/views.sql`](supabase/views.sql), and the reports in
+[`supabase/queries.sql`](supabase/queries.sql).
 
 ## Run it locally
 
