@@ -12,6 +12,9 @@ venv/
 # Data (download with `python train.py` or from Kaggle)
 data/
 
+# Local Streamlit secrets (Supabase keys)
+.streamlit/secrets.toml
+
 # Keep-alive failure screenshot
 keep_alive_failure.png
 

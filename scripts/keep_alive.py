@@ -17,7 +17,8 @@ import time
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
 from playwright.sync_api import sync_playwright
 
-DEFAULT_URL = "https://heart-risk-screener.streamlit.app/"
+# The source tag lets the app log this as a keep-alive visit instead of a real visitor.
+DEFAULT_URL = "https://heart-risk-screener.streamlit.app/?source=keepalive"
 APP_TEXT = "Heart Disease Risk Screener"
 LOAD_TIMEOUT_S = 180
 

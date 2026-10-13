@@ -4,6 +4,7 @@ streamlit run app.py
 """
 
 import json
+import uuid
 from pathlib import Path
 
 import altair as alt
@@ -11,6 +12,7 @@ import joblib
 import pandas as pd
 import streamlit as st
 
+from heart_risk.analytics import EventLogger, clean_ref
 from heart_risk.features import FEATURE_BY_NAME, FEATURE_COLUMNS, FEATURES, YES_NO, describe_value
 from heart_risk.modeling import explain_prediction
 
@@ -87,6 +89,44 @@ def load_artifacts():
     return model, metadata
 
 
+@st.cache_resource
+def get_event_logger() -> EventLogger | None:
+    """Analytics are enabled only when Supabase credentials are configured in secrets."""
+    try:
+        config = st.secrets["supabase"]
+        return EventLogger(config["url"], config["key"])
+    except Exception:
+        return None
+
+
+def start_analytics_session() -> None:
+    if "analytics_session" in st.session_state:
+        return
+    st.session_state.analytics_session = str(uuid.uuid4())
+    st.session_state.analytics_ref = clean_ref(st.query_params.get("ref"))
+    st.session_state.analytics_bot = st.query_params.get("source") == "keepalive"
+    st.session_state.analytics_edited = False
+    track("keepalive" if st.session_state.analytics_bot else "session_start", bypass_bot_filter=True)
+
+
+def track(event: str, bypass_bot_filter: bool = False, **properties) -> None:
+    logger = get_event_logger()
+    if logger is None or (st.session_state.analytics_bot and not bypass_bot_filter):
+        return
+    logger.log(st.session_state.analytics_session, event, st.session_state.analytics_ref, properties)
+
+
+def use_preset(name: str, profile: dict[str, int]) -> None:
+    apply_profile(profile)
+    track("preset_clicked", preset=name)
+
+
+def answers_edited() -> None:
+    if not st.session_state.analytics_edited:
+        st.session_state.analytics_edited = True
+        track("answers_edited")
+
+
 def is_toggle(feature) -> bool:
     return feature.kind == "binary" and feature.options == YES_NO
 
@@ -97,7 +137,7 @@ def apply_profile(profile: dict[str, int]) -> None:
 
 
 def render_input(feature) -> None:
-    kwargs = {"key": feature.name, "help": feature.help or None}
+    kwargs = {"key": feature.name, "help": feature.help or None, "on_change": answers_edited}
     if is_toggle(feature):
         st.toggle(feature.label, **kwargs)
     elif feature.kind == "numeric" and feature.name == "BMI":
@@ -192,7 +232,7 @@ def estimator_tab(model, metadata) -> None:
     st.write("Try an example profile, or fill in your own answers below.")
     cols = st.columns(len(PRESETS))
     for col, (name, profile) in zip(cols, PRESETS.items(), strict=True):
-        col.button(name, on_click=apply_profile, args=(profile,), width="stretch")
+        col.button(name, on_click=use_preset, args=(name, profile), width="stretch")
 
     left, right = st.columns([1.05, 1], gap="large")
     with left:
@@ -325,12 +365,16 @@ recall on validation data. No class weighting is used, so predicted risks stay c
 - The target is *having had* heart disease, not developing it in the future. Some inputs, like
   difficulty walking, may be consequences of heart disease rather than causes.
 
+**Privacy.** The app records anonymous usage events (visits, example profiles clicked, and
+whether answers were edited) to count traffic. Your answers and risk estimates are never stored.
+
 Source code, training pipeline and tests: [{REPO_URL.removeprefix("https://")}]({REPO_URL})
 """)
 
 
 def main() -> None:
     model, metadata = load_artifacts()
+    start_analytics_session()
     for feature in FEATURES:
         if feature.name not in st.session_state:
             apply_profile({feature.name: feature.default})
