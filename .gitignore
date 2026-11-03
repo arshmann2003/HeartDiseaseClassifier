@@ -15,6 +15,10 @@ data/
 # Local Streamlit secrets (Supabase keys)
 .streamlit/secrets.toml
 
+# Static demo build output, and a local analytics config (publishable key)
+_site/
+web/config.js
+
 # Keep-alive failure screenshot
 keep_alive_failure.png
 
