@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Heart Disease Risk Screener</title>
+  <meta name="description" content="Estimate heart disease risk from 21 CDC survey answers. The logistic regression model runs in your browser.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <p class="eyebrow">CDC BRFSS 2015 · scored in your browser</p>
+    <h1>Heart Disease Risk Screener</h1>
+    <p class="lede" id="lede">Loading the model…</p>
+    <p class="disclaimer">For education and demonstration only. Not medical advice.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="tab-estimator" aria-controls="panel-estimator" aria-selected="true">Risk estimator</button>
+    <button type="button" role="tab" id="tab-performance" aria-controls="panel-performance" aria-selected="false">Model performance</button>
+    <button type="button" role="tab" id="tab-about" aria-controls="panel-about" aria-selected="false">About</button>
+  </div>
+
+  <main>
+    <section id="panel-estimator" role="tabpanel" aria-labelledby="tab-estimator">
+      <p class="section-lead">Try an example profile, or fill in your own answers below.</p>
+      <div class="presets" id="presets"></div>
+      <div class="estimator">
+        <form id="profile-form"></form>
+        <aside class="results" id="results" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section id="panel-performance" role="tabpanel" aria-labelledby="tab-performance" hidden>
+      <div id="performance"></div>
+    </section>
+
+    <section id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+      <div class="prose" id="about"></div>
+    </section>
+  </main>
+
+  <div class="mobile-risk" id="mobile-risk" hidden></div>
+
+  <noscript>
+    <p class="disclaimer">This page scores the model in JavaScript. Enable JavaScript to use the estimator.</p>
+  </noscript>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
