@@ -1,14 +1,16 @@
 # Heart Disease Risk Screener
 
 [![CI](https://github.com/arshmann2003/HeartDiseaseClassifier/actions/workflows/ci.yml/badge.svg)](https://github.com/arshmann2003/HeartDiseaseClassifier/actions/workflows/ci.yml)
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://heart-risk-screener.streamlit.app/?ref=github)
 
 A machine learning screening tool that estimates the chance that a person has heart disease from
 21 lifestyle and health survey answers. It is trained on **253,680 responses** to the CDC's 2015
 Behavioral Risk Factor Surveillance System (BRFSS).
 
-**Live demo: [heart-risk-screener.streamlit.app](https://heart-risk-screener.streamlit.app/?ref=github)**
-<sub>If the app is asleep, click "Yes, get this app back up!" and it loads in about 30 seconds.</sub>
+**Live demo: [arshmann2003.github.io/HeartDiseaseClassifier](https://arshmann2003.github.io/HeartDiseaseClassifier/?ref=github)**
+
+The public page scores logistic regression in the browser. There is no server to wake up.
+Gradient boosting still wins model selection by a small margin and is reported in the comparison;
+it is not what a visitor waits on. `streamlit run app.py` still serves that selected model locally.
 
 ![Web app screenshot](docs/images/app_screenshot.png)
 
@@ -84,17 +86,44 @@ train.py ── 60/20/20 stratified split
    │        ├─ choose the threshold reaching 80% recall on validation
    │        └─ score the test set once; permutation importance; figures
    ▼
-models/heart_risk_model.joblib + metadata.json   ──►   app.py (Streamlit)
+models/heart_risk_model.joblib + metadata.json   ──►   app.py (local Streamlit, selected model)
+web/model.json (logistic regression weights)       ──►   static page on GitHub Pages
 ```
 
-The web app explains each estimate by replacing one answer at a time with the most common survey
+The page explains each estimate by replacing one answer at a time with the median training-set
 answer and measuring how much the predicted risk changes.
 
-**Usage analytics.** The app logs anonymous events (visits, example profiles clicked, whether
-answers were edited) to a Supabase Postgres table, tagged with the `?ref=` value of the link the
-visitor used. Events are sent from a background thread so the app never waits on the network. The
-table's row-level security lets the app's public key insert known event types only, with no read
-access, and health answers are never sent. See [`supabase/schema.sql`](supabase/schema.sql), the
+## Why the public demo is static
+
+Streamlit Community Cloud sleeps after idle time. The first person to open the link — usually
+from GitHub, a resume, or LinkedIn — spent that visit waiting for a container to boot. The model
+file is 71KB and a prediction is one probability, so the wait was the platform, not the math.
+
+Logistic regression is the model a static page can score. On the held-out test set it is 0.848
+ROC-AUC against 0.851 for gradient boosting, and 24.0% precision against 24.4% at the same recall
+target. The page ships the scaler and coefficients in `web/model.json` and evaluates them in
+JavaScript. Answers never go to a server. Anonymous usage events still go to Supabase when a
+publishable key is configured, and that key remains insert-only.
+
+### Publish the demo
+
+GitHub Pages serves the files produced by `python scripts/build_site.py`.
+
+1. In the repo settings, set **Pages → Build and deployment → Source** to **GitHub Actions**.
+2. Push to `main`. `.github/workflows/pages.yml` publishes the site.
+3. Optional: add repository secrets `SUPABASE_URL` and `SUPABASE_KEY` (the publishable key, not
+   the `analytics_reader` password) if the static demo should record the same anonymous events.
+4. The keep-alive workflow exists only for the old Streamlit Cloud app. Remove it once you stop
+   sharing that URL.
+
+The site is `https://arshmann2003.github.io/HeartDiseaseClassifier/`.
+
+**Usage analytics.** The static page and the local Streamlit app log the same anonymous events
+(visits, example profiles clicked, whether answers were edited) to a Supabase Postgres table,
+tagged with the `?ref=` value of the link the visitor used. The page sends them with `fetch` and
+ignores failure. The Streamlit app sends them from a background thread. Either way the demo does
+not wait on the network. The table's row-level security lets the publishable key insert known
+event types only, with no read access, and health answers are never sent. See [`supabase/schema.sql`](supabase/schema.sql), the
 `visits` and `daily_visits` views in [`supabase/views.sql`](supabase/views.sql), and the reports in
 [`supabase/queries.sql`](supabase/queries.sql). A private dashboard (`streamlit run dashboard.py`)
 charts visits by day and source, engagement, and keep-alive health. It connects through a separate
@@ -109,8 +138,10 @@ cd HeartDiseaseClassifier
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 
-streamlit run app.py      # web app (uses the trained model in models/)
+streamlit run app.py      # local app, serves the selected gradient boosting model
+python scripts/build_site.py && python -m http.server -d _site   # static demo
 python train.py           # retrain from scratch (~1 min; downloads the data from Kaggle)
+python train.py --web-only   # refresh web/model.json without replacing the selected model
 pytest                    # tests
 ```
 
@@ -121,14 +152,16 @@ yourself.
 ## Project structure
 
 ```
-├── app.py                  # Streamlit web app
+├── app.py                  # Local Streamlit app (selected gradient boosting model)
+├── web/                    # Static demo: scores logistic regression in the browser
 ├── dashboard.py            # Private usage analytics dashboard (run locally)
 ├── train.py                # Reproducible training and evaluation pipeline
-├── heart_risk/             # Feature schema, modeling and explanation code
+├── heart_risk/             # Feature schema, modeling, explanation, web export
 ├── models/                 # Trained model and metadata (metrics, threshold, reference values)
 ├── reports/figures/        # Evaluation plots generated by train.py
-├── tests/                  # Model and app tests (run in CI)
-├── scripts/keep_alive.py   # Scheduled visit that keeps the hosted demo from sleeping
+├── tests/                  # Model, web-model, and app tests (run in CI)
+├── scripts/build_site.py   # Assemble web/ and the figures into _site/
+├── scripts/keep_alive.py   # Scheduled visit for the old Streamlit Cloud demo
 ├── supabase/               # Analytics table schema, access policy and report queries
 ├── notebooks/              # Original exploratory analysis (EDA, clustering, outliers, feature selection)
 ├── analysis/               # Modules used by the notebooks
