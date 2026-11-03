@@ -2,10 +2,15 @@
 
     python train.py                  # full pipeline (includes hyperparameter search)
     python train.py --skip-tuning    # faster, uses default gradient boosting settings
+    python train.py --web-only       # refresh web/model.json from logistic regression
 
 Data is split 60/20/20 into train / validation / test. Model selection,
 hyperparameter search and the decision threshold only ever see train and
 validation data; the test set is scored once at the end.
+
+The joblib artifact is the model that won validation PR-AUC. web/model.json
+is always the logistic regression, because the public demo scores that model
+in the browser instead of cold-starting a Python server.
 """
 
 from __future__ import annotations
@@ -16,13 +21,8 @@ import time
 from pathlib import Path
 
 import joblib
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.stats import loguniform, randint
 from sklearn.base import clone
 from sklearn.calibration import calibration_curve
 from sklearn.inspection import permutation_importance
@@ -37,27 +37,44 @@ from heart_risk.modeling import (
     threshold_for_recall,
     threshold_metrics,
 )
+from heart_risk.web_model import refresh_logistic_artifact, write_web_model
 
 SEED = 42
 TARGET_RECALL = 0.80
 MODEL_DIR = Path("models")
 FIG_DIR = Path("reports/figures")
 COLORS = {"Logistic Regression": "#8c8c8c", "Random Forest": "#4c9be8", "Gradient Boosting": "#e8554e"}
+plt = None
 
-plt.rcParams.update(
-    {
-        "figure.dpi": 150,
-        "savefig.bbox": "tight",
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "axes.grid": True,
-        "grid.alpha": 0.3,
-        "font.size": 10,
-    }
-)
+
+def _configure_plots():
+    """Import pyplot only for a full training run.
+
+    `--web-only` refits logistic regression and writes JSON. It should not
+    require the plotting dependencies.
+    """
+    global plt
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    plt.rcParams.update(
+        {
+            "figure.dpi": 150,
+            "savefig.bbox": "tight",
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "axes.grid": True,
+            "grid.alpha": 0.3,
+            "font.size": 10,
+        }
+    )
 
 
 def tune_gradient_boosting(model, X_train, y_train):
+    from scipy.stats import loguniform, randint
+
     search = RandomizedSearchCV(
         model,
         param_distributions={
@@ -78,6 +95,7 @@ def tune_gradient_boosting(model, X_train, y_train):
 
 
 def main(skip_tuning: bool) -> None:
+    _configure_plots()
     start = time.time()
     X, y = load_data()
     print(f"Loaded {len(X):,} rows, prevalence {y.mean():.1%}")
@@ -173,6 +191,8 @@ def main(skip_tuning: bool) -> None:
         },
     }
     (MODEL_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2, default=_to_builtin))
+    web_path = write_web_model(fitted["Logistic Regression"], metadata)
+    print(f"Wrote {web_path} for the static demo.")
 
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     plot_curves(results, y_test, y.mean())
@@ -305,4 +325,14 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--skip-tuning", action="store_true", help="skip the gradient boosting search")
-    main(parser.parse_args().skip_tuning)
+    parser.add_argument(
+        "--web-only",
+        action="store_true",
+        help="fit logistic regression and write web/model.json, leaving the selected model untouched",
+    )
+    args = parser.parse_args()
+    if args.web_only:
+        path = refresh_logistic_artifact()
+        print(f"Wrote {path}. The gradient boosting artifact in models/ was left as-is.")
+    else:
+        main(args.skip_tuning)
