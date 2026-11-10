@@ -8,9 +8,9 @@ Behavioral Risk Factor Surveillance System (BRFSS).
 
 **Live demo: [arshmann2003.github.io/HeartDiseaseClassifier](https://arshmann2003.github.io/HeartDiseaseClassifier/?ref=github)**
 
-The public page scores logistic regression in the browser. There is no server to wake up.
-Gradient boosting still wins model selection by a small margin and is reported in the comparison;
-it is not what a visitor waits on. `streamlit run app.py` still serves that selected model locally.
+The public page scores logistic regression in the browser. Gradient boosting still wins model
+selection by a small margin and is reported in the comparison. `streamlit run app.py` serves that
+selected model locally.
 
 ![Web app screenshot](docs/images/app_screenshot.png)
 
@@ -93,19 +93,7 @@ web/model.json (logistic regression weights)       ──►   static page on Gi
 The page explains each estimate by replacing one answer at a time with the median training-set
 answer and measuring how much the predicted risk changes.
 
-## Why the public demo is static
-
-Streamlit Community Cloud sleeps after idle time. The first person to open the link — usually
-from GitHub, a resume, or LinkedIn — spent that visit waiting for a container to boot. The model
-file is 71KB and a prediction is one probability, so the wait was the platform, not the math.
-
-Logistic regression is the model a static page can score. On the held-out test set it is 0.848
-ROC-AUC against 0.851 for gradient boosting, and 24.0% precision against 24.4% at the same recall
-target. The page ships the scaler and coefficients in `web/model.json` and evaluates them in
-JavaScript. Answers never go to a server. Anonymous usage events still go to Supabase when a
-publishable key is configured, and that key remains insert-only.
-
-### Publish the demo
+## Publish the demo
 
 GitHub Pages serves the files produced by `python scripts/build_site.py`.
 
