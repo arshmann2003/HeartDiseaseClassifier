@@ -156,14 +156,4 @@ yourself.
 └── docs/Report.pdf         # Original course report
 ```
 
-## Limitations
-
-- The data is self-reported, from US adults in 2015 only.
-- The target is *having had* coronary heart disease or a heart attack, not developing it later.
-  Some inputs, such as difficulty walking, may be results of heart disease rather than causes. A
-  clinical risk model would need follow-up data.
-- Feature effects shown in the app are statistical associations, not causal effects.
-
----
-
 Built by **Arshdeep Mann**
