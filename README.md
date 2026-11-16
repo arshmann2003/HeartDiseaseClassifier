@@ -57,7 +57,7 @@ fits a cheap first-pass screen that is followed by a real check-up. It is not a 
 
 ## What I fixed from the first version
 
-This project started as a CMPT 459 (Data Mining) course project. The [original analysis
+The [original analysis
 notebook](notebooks/02_analysis_pipeline.ipynb) reported "98% recall." When I revisited it, I found
 problems in how the model was evaluated:
 
