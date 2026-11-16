@@ -21,21 +21,19 @@ from sklearn.metrics import (
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from .features import FEATURE_COLUMNS, TARGET
+from .cleaning import CleaningReport, clean_survey
+from .features import FEATURE_COLUMNS
 
 DATA_FILE = "heart_disease_health_indicators_BRFSS2015.csv"
 KAGGLE_DATASET = "alexteboul/heart-disease-health-indicators-dataset"
 
 
-def load_data(data_dir: Path | str = "data") -> tuple[pd.DataFrame, pd.Series]:
-    """Load the dataset, downloading it from Kaggle if it is not present locally."""
+def load_data(data_dir: Path | str = "data") -> tuple[pd.DataFrame, pd.Series, CleaningReport]:
+    """Load the survey file and clean it. The split has not happened yet."""
     path = Path(data_dir) / DATA_FILE
     if not path.exists():
         path = _download(Path(data_dir))
-    df = pd.read_csv(path)
-    X = df[FEATURE_COLUMNS].astype(int)
-    y = df[TARGET].astype(int)
-    return X, y
+    return clean_survey(pd.read_csv(path))
 
 
 def _download(data_dir: Path) -> Path:

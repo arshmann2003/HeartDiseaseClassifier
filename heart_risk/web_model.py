@@ -256,7 +256,8 @@ def refresh_logistic_artifact(
     metadata = json.loads(metadata_path.read_text())
     published = metadata["results"]["Logistic Regression"]
 
-    X, y = load_data()
+    X, y, report = load_data()
+    print(report.format())
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=seed)
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=seed

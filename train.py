@@ -4,7 +4,10 @@
     python train.py --skip-tuning    # faster, uses default gradient boosting settings
     python train.py --web-only       # refresh web/model.json from logistic regression
 
-Data is split 60/20/20 into train / validation / test. Model selection,
+heart_risk.cleaning runs first. It drops missing values and values outside
+the allowed range, counts duplicate rows, and prints that audit. The split has
+not happened yet. Data is then split 60/20/20
+into train / validation / test. Model selection,
 hyperparameter search and the decision threshold only ever see train and
 validation data; the test set is scored once at the end.
 
@@ -97,8 +100,20 @@ def tune_gradient_boosting(model, X_train, y_train):
 def main(skip_tuning: bool) -> None:
     _configure_plots()
     start = time.time()
-    X, y = load_data()
-    print(f"Loaded {len(X):,} rows, prevalence {y.mean():.1%}")
+    X, y, report = load_data()
+    print(report.format())
+    reports = Path("reports")
+    reports.mkdir(parents=True, exist_ok=True)
+    report.missing.to_csv(reports / "dropped_missing.csv", index=False)
+    report.out_of_range.to_csv(reports / "dropped_out_of_range.csv", index=False)
+    report.duplicates.to_csv(reports / "duplicate_rows.csv", index=False)
+    print(
+        "Record tables written to reports/: "
+        f"{report.dropped_missing:,} missing, "
+        f"{report.dropped_out_of_range:,} out of range, "
+        f"{report.duplicate_rows_kept:,} duplicates kept"
+    )
+    print(f"Clean rows {len(X):,}, prevalence {y.mean():.1%}")
 
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=SEED)
     X_val, X_test, y_val, y_test = train_test_split(
@@ -177,6 +192,7 @@ def main(skip_tuning: bool) -> None:
         "sklearn_version": sklearn.__version__,
         "trained_at": time.strftime("%Y-%m-%d"),
         "n_rows": int(len(X)),
+        "cleaning": report.to_dict(),
         "split_sizes": {"train": len(X_train), "validation": len(X_val), "test": len(X_test)},
         "prevalence": float(y.mean()),
         "target_recall": TARGET_RECALL,
