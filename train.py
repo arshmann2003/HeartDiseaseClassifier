@@ -22,6 +22,7 @@ import argparse
 import json
 import time
 from pathlib import Path
+from typing import NamedTuple
 
 import joblib
 import numpy as np
@@ -97,11 +98,19 @@ def tune_gradient_boosting(model, X_train, y_train):
     return search.best_estimator_, search.best_params_
 
 
-def main(skip_tuning: bool) -> None:
-    _configure_plots()
-    start = time.time()
-    X, y, report = load_data()
-    print(report.format())
+class TrainValTest(NamedTuple):
+    """The 60/20/20 split. Each later step only receives the part it is allowed to see."""
+
+    X_train: pd.DataFrame
+    y_train: pd.Series
+    X_val: pd.DataFrame
+    y_val: pd.Series
+    X_test: pd.DataFrame
+    y_test: pd.Series
+
+
+def write_cleaning_records(report) -> None:
+    """Save the three cleaning tables before any model is fit."""
     reports = Path("reports")
     reports.mkdir(parents=True, exist_ok=True)
     report.missing.to_csv(reports / "dropped_missing.csv", index=False)
@@ -113,58 +122,75 @@ def main(skip_tuning: bool) -> None:
         f"{report.dropped_out_of_range:,} out of range, "
         f"{report.duplicate_rows_kept:,} duplicates kept"
     )
-    print(f"Clean rows {len(X):,}, prevalence {y.mean():.1%}")
 
+
+def split_train_val_test(X: pd.DataFrame, y: pd.Series) -> TrainValTest:
+    """Hold out 40%, then split that half into validation and test."""
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, test_size=0.4, stratify=y, random_state=SEED)
     X_val, X_test, y_val, y_test = train_test_split(
         X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=SEED
     )
     print(f"Split: train {len(X_train):,} / val {len(X_val):,} / test {len(X_test):,}")
+    return TrainValTest(X_train, y_train, X_val, y_val, X_test, y_test)
 
+
+def score_model(model, parts: TrainValTest) -> dict:
+    """Score one fitted model. The threshold comes from validation, then test is scored once."""
+    val_proba = model.predict_proba(parts.X_val)[:, 1]
+    test_proba = model.predict_proba(parts.X_test)[:, 1]
+    threshold = threshold_for_recall(parts.y_val, val_proba, TARGET_RECALL)
+    return {
+        "validation": ranking_metrics(parts.y_val, val_proba),
+        "test": ranking_metrics(parts.y_test, test_proba),
+        "test_at_threshold": threshold_metrics(parts.y_test, test_proba, threshold),
+        "_val_proba": val_proba,
+        "_test_proba": test_proba,
+    }
+
+
+def fit_and_score(parts: TrainValTest, skip_tuning: bool) -> tuple[dict, dict, dict | None]:
+    """Fit every candidate on train and record validation and test metrics."""
     fitted, results, best_params = {}, {}, None
     for name, model in candidate_models(SEED).items():
         print(f"Training {name}...")
         if name == "Gradient Boosting" and not skip_tuning:
-            model, best_params = tune_gradient_boosting(model, X_train, y_train)
+            model, best_params = tune_gradient_boosting(model, parts.X_train, parts.y_train)
         else:
-            model = clone(model).fit(X_train, y_train)
+            model = clone(model).fit(parts.X_train, parts.y_train)
         fitted[name] = model
-
-        val_proba = model.predict_proba(X_val)[:, 1]
-        test_proba = model.predict_proba(X_test)[:, 1]
-        threshold = threshold_for_recall(y_val, val_proba, TARGET_RECALL)
-        results[name] = {
-            "validation": ranking_metrics(y_val, val_proba),
-            "test": ranking_metrics(y_test, test_proba),
-            "test_at_threshold": threshold_metrics(y_test, test_proba, threshold),
-            "_val_proba": val_proba,
-            "_test_proba": test_proba,
-        }
+        results[name] = score_model(model, parts)
         r = results[name]
         print(
             f"  val PR-AUC {r['validation']['pr_auc']:.4f} | test ROC-AUC "
             f"{r['test']['roc_auc']:.4f} | test recall {r['test_at_threshold']['recall']:.3f} "
             f"@ precision {r['test_at_threshold']['precision']:.3f}"
         )
+    return fitted, results, best_params
 
-    best_name = max(results, key=lambda n: results[n]["validation"]["pr_auc"])
-    best_model = fitted[best_name]
+
+def choose_model(fitted: dict, results: dict) -> tuple[str, object, dict]:
+    """Pick the model with the highest validation PR-AUC."""
+    best_name = max(results, key=lambda name: results[name]["validation"]["pr_auc"])
     best = results[best_name]
     threshold = best["test_at_threshold"]["threshold"]
     print(f"Selected {best_name} (highest validation PR-AUC), threshold {threshold:.4f}")
+    return best_name, fitted[best_name], best
 
+
+def feature_importance(model, parts: TrainValTest) -> pd.DataFrame:
+    """Shuffle each test column and measure the drop in PR-AUC."""
     print("Computing permutation importance...")
-    sample = X_test.sample(n=min(20_000, len(X_test)), random_state=SEED)
+    sample = parts.X_test.sample(n=min(20_000, len(parts.X_test)), random_state=SEED)
     importance = permutation_importance(
-        best_model,
+        model,
         sample,
-        y_test.loc[sample.index],
+        parts.y_test.loc[sample.index],
         scoring="average_precision",
         n_repeats=5,
         random_state=SEED,
         n_jobs=-1,
     )
-    importance_df = (
+    return (
         pd.DataFrame(
             {
                 "feature": FEATURE_COLUMNS,
@@ -176,46 +202,77 @@ def main(skip_tuning: bool) -> None:
         .reset_index(drop=True)
     )
 
-    train_df = X_train.assign(target=y_train.values)
+
+def training_metadata(best_name, X, y, report, parts, best, best_params, importance_df, results) -> dict:
+    """Build the JSON saved next to the model. Probabilities stay out of the file."""
+    import sklearn
+
+    train_df = parts.X_train.assign(target=parts.y_train.values)
     prevalence_by_group = (
         train_df.groupby(["Sex", "Age"])["target"].mean().round(4).reset_index().to_dict(orient="records")
     )
-    reference_profile = {c: float(X_train[c].median()) for c in FEATURE_COLUMNS}
-
-    MODEL_DIR.mkdir(exist_ok=True)
-    joblib.dump(best_model, MODEL_DIR / "heart_risk_model.joblib", compress=3)
-
-    import sklearn
-
-    metadata = {
+    return {
         "model_name": best_name,
         "sklearn_version": sklearn.__version__,
         "trained_at": time.strftime("%Y-%m-%d"),
         "n_rows": int(len(X)),
         "cleaning": report.to_dict(),
-        "split_sizes": {"train": len(X_train), "validation": len(X_val), "test": len(X_test)},
+        "split_sizes": {
+            "train": len(parts.X_train),
+            "validation": len(parts.X_val),
+            "test": len(parts.X_test),
+        },
         "prevalence": float(y.mean()),
         "target_recall": TARGET_RECALL,
-        "threshold": threshold,
+        "threshold": best["test_at_threshold"]["threshold"],
         "best_params": best_params,
         "feature_columns": FEATURE_COLUMNS,
-        "reference_profile": reference_profile,
+        "reference_profile": {column: float(parts.X_train[column].median()) for column in FEATURE_COLUMNS},
         "prevalence_by_group": prevalence_by_group,
         "feature_importance": importance_df.round(5).to_dict(orient="records"),
         "results": {
-            name: {k: v for k, v in r.items() if not k.startswith("_")} for name, r in results.items()
+            name: {key: value for key, value in row.items() if not key.startswith("_")}
+            for name, row in results.items()
         },
     }
+
+
+def save_model_artifacts(best_model, metadata: dict, logistic_model) -> None:
+    """Write the selected model, its metadata, and the logistic regression the browser scores."""
+    MODEL_DIR.mkdir(exist_ok=True)
+    joblib.dump(best_model, MODEL_DIR / "heart_risk_model.joblib", compress=3)
     (MODEL_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2, default=_to_builtin))
-    web_path = write_web_model(fitted["Logistic Regression"], metadata)
+    web_path = write_web_model(logistic_model, metadata)
     print(f"Wrote {web_path} for the static demo.")
 
+
+def save_figures(results, y, parts: TrainValTest, importance_df, best) -> None:
+    """Draw the evaluation plots from the scored test and validation sets."""
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-    plot_curves(results, y_test, y.mean())
-    plot_calibration(results, y_test)
+    threshold = best["test_at_threshold"]["threshold"]
+    plot_curves(results, parts.y_test, y.mean())
+    plot_calibration(results, parts.y_test)
     plot_importance(importance_df)
-    plot_threshold(best["_val_proba"], y_val, threshold)
+    plot_threshold(best["_val_proba"], parts.y_val, threshold)
     plot_confusion(best["test_at_threshold"]["confusion_matrix"], threshold)
+
+
+def main(skip_tuning: bool) -> None:
+    _configure_plots()
+    start = time.time()
+
+    X, y, report = load_data()
+    print(report.format())
+    write_cleaning_records(report)
+    print(f"Clean rows {len(X):,}, prevalence {y.mean():.1%}")
+
+    parts = split_train_val_test(X, y)
+    fitted, results, best_params = fit_and_score(parts, skip_tuning)
+    best_name, best_model, best = choose_model(fitted, results)
+    importance_df = feature_importance(best_model, parts)
+    metadata = training_metadata(best_name, X, y, report, parts, best, best_params, importance_df, results)
+    save_model_artifacts(best_model, metadata, fitted["Logistic Regression"])
+    save_figures(results, y, parts, importance_df, best)
     print(f"Done in {time.time() - start:.0f}s. Model, metadata and figures written.")
 
 
